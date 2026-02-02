@@ -11,8 +11,8 @@ class Player:
 
         #ジャンプ系
         self.jump_count = 0
-        self.max_jumps = 2
-        self.jump_strength = -5.5
+        self.max_jumps = 1
+        self.jump_strength = -5
         self.gravity = 0.35
         self.max_fall_speed = 6
         self.accelerration = 1
@@ -35,11 +35,14 @@ class Player:
 
         for tile_x, tile_y in tile_coords:
             # タイルマップの範囲内かチェック
-            if 0 <= tile_x < 63 and 0 <= tile_y < 16:
+            if 0 <= tile_x < 256 and 0 <= tile_y < 16:
                 tile = pyxel.tilemap(0).pget(tile_x, tile_y)
                 if (tile[0] == 0 and tile[1] == 1) or (tile[0] == 0 and tile[1] == 2):  # 地面とオブジェクトのタイル
                     return True, tile_y * 8  # 衝突したタイルのY座標も返す
-                
+                elif (tile[0] == 2 and tile[1] == 2) or (tile[0] == 0 and tile[1] == 3):
+                    return True, tile_y * 8  # 衝突したタイルのY座標も返す
+                elif (tile[0] == 2 and tile[1] == 0) or (tile[0] == 2 and tile[1] == 1):
+                    return True, tile_y * 8  # 衝突したタイルのY座標も返す
         return False, 0
 
     
@@ -61,7 +64,7 @@ class Player:
                 self.on_ground = False
                 self.jump_count = 1
             elif self.jump_count < self.max_jumps:
-                self.dy = self.jump_strength * 0.7
+                self.dy = self.jump_strength
                 self.jump_count += 1
 
         if not self.on_ground:
@@ -112,11 +115,11 @@ class Player:
                 self.dy = 0
 
         # 移動制限
-        self.x = max(0,min(self.x , 504 - 8))
+        self.x = max(0,min(self.x , 2048 - 8))
 
     def check_collision(self, enemy):
         # 敵とのあたり判定
-        if (abs(self.x - enemy.x) < 7 and
+        if (abs(self.x - enemy.x) < 8 and
              0 > self.y - enemy.y > -8):
             self.defeat_enemy(enemy)
             return False
@@ -126,10 +129,25 @@ class Player:
             self.is_alive = False
             return True
         return False
+    
+    def check_collision_dossun(self, enemy):
+        # 敵とのあたり判定
+        if (abs(self.x - enemy.x) < 7 and
+             abs(self.y -enemy.y) < 7):
+            self.is_alive = False
+            return True
+        return False
+    
+    def check_collision_item(self, item):
+        # アイテムとのあたり判定
+        if (abs(self.x - item.x) < 5 and
+             abs(self.y -item.y) < 5):
+            item.get_item(self)
+
 
     def defeat_enemy(self, enemy):
         enemy.is_show = False
-        self.dy = self.jump_strength
+        self.dy = self.jump_strength * 0.5
         self.on_ground = False
         self.dy += self.gravity
         self.dy = min(self.dy, self.max_fall_speed)
