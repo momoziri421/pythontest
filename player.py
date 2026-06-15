@@ -15,10 +15,13 @@ class Player:
         self.jump_strength = -5
         self.gravity = 0.35
         self.max_fall_speed = 6
-        self.accelerration = 1
-        self.max_speed = 3
-        self.friction = 0.7
-        
+        self.accelerration = 0.4
+        self.max_speed = 2
+        self.friction = 0.75
+
+        # スコア
+        self.score = 0
+
         # ライフ・無敵
         self.is_alive = True
         self.lives = 3
@@ -163,6 +166,7 @@ class Player:
 
     def defeat_enemy(self, enemy):
         enemy.is_show = False
+        self.score += 100
         self.dy = self.jump_strength * 0.5
         self.on_ground = False
         self.dy += self.gravity

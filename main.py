@@ -116,21 +116,19 @@ class App:
         # カメラのx座標
         self.camera_x = 0
         # スコア・タイマー
-        self.score = 0
         self.timer = 0
+        self.final_score = 0
 
     def update(self):
         if not self.game_over and not self.game_clear:
             self.player.update()
             self.timer += 1
-            # 進行距離に応じてスコア加算(60フレームに1回)
-            if self.timer % 60 == 0:
-                self.score += int(self.player.x / 8)
 
             # クリア判定(2016 = 252タイル目)
             if self.player.x >= 2016:
                 self.game_clear = True
-                self.score += max(0, (300 - self.timer // 60)) * 10
+                time_sec = self.timer // 30
+                self.final_score = max(0, 600 - time_sec) + self.player.score
             
             # カメラ位置追従
             target_camera_x = self.player.x - pyxel.width // 2
@@ -199,7 +197,7 @@ class App:
                 pyxel.blt(real_x, self.player.y, 0, 8, 8, 8 if self.player.direction == 1 else -8, 8, 0)
 
             # HUD
-            pyxel.text(2, 2, f"SCORE:{self.score}", 7)
+            pyxel.text(2, 2, f"SCORE:{self.player.score}", 7)
             time_sec = self.timer // 30
             pyxel.text(2, 10, f"TIME:{time_sec}", 7)
             pyxel.text(118, 2, f"LIFE:{self.player.lives}", 8)
@@ -270,14 +268,17 @@ class App:
 
         elif self.game_clear:
             # クリア画面
-            pyxel.text(57, 54, "GAME CLEAR!", 11)
-            pyxel.text(50, 64, f"SCORE: {self.score}", 10)
             time_sec = self.timer // 30
-            pyxel.text(50, 72, f"TIME:  {time_sec}s", 7)
-            pyxel.text(42, 82, "PRESS R TO RESTART", 8)
+            pyxel.text(57, 46, "GAME CLEAR!", 11)
+            pyxel.text(44, 58, f"TIME:        {time_sec}s", 7)
+            pyxel.text(44, 66, f"KILL SCORE:  {self.player.score}", 7)
+            pyxel.text(44, 74, f"FINAL SCORE: {self.final_score}", 10)
+            pyxel.text(42, 84, "PRESS R TO RESTART", 8)
         else:
             # ゲームオーバー画面
-            pyxel.text(60, 58, "GAME OVER", 8)
-            pyxel.text(50, 68, f"SCORE: {self.score}", 7)
-            pyxel.text(42, 78, "PRESS R TO RESTART", 8)
+            time_sec = self.timer // 30
+            pyxel.text(60, 50, "GAME OVER", 8)
+            pyxel.text(44, 62, f"TIME:        {time_sec}s", 7)
+            pyxel.text(44, 70, f"KILL SCORE:  {self.player.score}", 7)
+            pyxel.text(44, 78, "PRESS R TO RESTART", 8)
 App()
