@@ -202,8 +202,7 @@ class App:
             pyxel.text(2, 2, f"SCORE:{self.score}", 7)
             time_sec = self.timer // 30
             pyxel.text(2, 10, f"TIME:{time_sec}", 7)
-            for i in range(self.player.lives):
-                pyxel.blt(130 + i * 10, 2, 0, 8, 8, 8, 8, 0)
+            pyxel.text(118, 2, f"LIFE:{self.player.lives}", 8)
 
             # 敵の描画
             for enemy in self.enemies_type1:
