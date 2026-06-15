@@ -29,9 +29,11 @@ class SpeedItem:
         self.is_getted = False
 
     def get_item(self, player):
-        player.accelerration += 0.05
-        self.is_show = False
-        self.is_getted = True
+        if not self.is_getted:
+            player.max_speed = min(player.max_speed + 0.5, 6)
+            player.accelerration += 0.05
+            self.is_show = False
+            self.is_getted = True
     
     def draw(self):
         pyxel.blt(self.x, self.y, 0, 24, 8, 8, 8, 0)

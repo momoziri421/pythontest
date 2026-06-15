@@ -84,6 +84,8 @@ class EnemyBird:
         self.gravity = 0.3
         self.max_fall_speed = 1
         self.icon_direction = 0
+        self.jump_timer = 0
+        self.jump_interval = 60
 
     def check_tile_collisions(self, x, y):
         # タイルのサイズ（8x8）を考慮して、プレイヤーの四隅のタイル座標をチェック
@@ -113,11 +115,12 @@ class EnemyBird:
 
     def update(self):
 
-        # ジャンプ
-        if pyxel.btn(pyxel.KEY_SPACE):
-            if self.on_ground:
-                self.dy = self.jump_strength
-                self.on_ground = False
+        # タイマーで自律的にジャンプ
+        self.jump_timer += 1
+        if self.jump_timer >= self.jump_interval and self.on_ground:
+            self.dy = self.jump_strength
+            self.on_ground = False
+            self.jump_timer = 0
 
         if not self.on_ground:
             self.dy += self.gravity
@@ -195,15 +198,16 @@ class EnemyDossunTypeUnder:
 
         for tile_x, tile_y in tile_coords:
             # タイルマップの範囲内かチェック
+            if 0 <= tile_x < 256 and 0 <= tile_y < 16:
                 tile = pyxel.tilemap(0).pget(tile_x, tile_y)
                 if (tile[0] == 0 and tile[1] == 1) or (tile[0] == 0 and tile[1] == 2):
-                    return True, tile_y * 8  # 衝突したタイルのY座標も返す
-                elif (tile[0] == 2 and tile[1] == 2) or (tile[0] == 0 and tile[1] == 3):  # 地面とオブジェクトのタイル
-                    return True, tile_y * 8  # 衝突したタイルのY座標も返す
+                    return True, tile_y * 8
+                elif (tile[0] == 2 and tile[1] == 2) or (tile[0] == 0 and tile[1] == 3):
+                    return True, tile_y * 8
                 elif (tile[0] == 2 and tile[1] == 0) or (tile[0] == 2 and tile[1] == 1):
-                    return True, tile_y * 8  # 衝突したタイルのY座標も返す
-        return False, 0    
-    
+                    return True, tile_y * 8
+        return False, 0
+
 
     def update(self, player):
         if not self.is_move and self.down_wait_flame < 30:

@@ -110,19 +110,27 @@ class App:
         self.enemies_type3 = self.spawn_enemies_type3()
         self.enemies_type4 = self.spawn_enemies_type4()
         self.jump_items = self.spawn_jump_items()
-        self.speed_items = self.spawn_speed_items()           
+        self.speed_items = self.spawn_speed_items()
         self.game_over = False
         self.game_clear = False
         # カメラのx座標
         self.camera_x = 0
+        # スコア・タイマー
+        self.score = 0
+        self.timer = 0
 
     def update(self):
         if not self.game_over and not self.game_clear:
             self.player.update()
+            self.timer += 1
+            # 進行距離に応じてスコア加算(60フレームに1回)
+            if self.timer % 60 == 0:
+                self.score += int(self.player.x / 8)
 
             # クリア判定(2016 = 252タイル目)
             if self.player.x >= 2016:
                 self.game_clear = True
+                self.score += max(0, (300 - self.timer // 60)) * 10
             
             # カメラ位置追従
             target_camera_x = self.player.x - pyxel.width // 2
@@ -132,40 +140,47 @@ class App:
             for enemy in self.enemies_type1:
                 if -64 <= enemy.x - self.camera_x <= pyxel.width + 64:
                     enemy.update()
-                    if self.player.check_collision(enemy):
-                        self.game_over = True
+                    self.player.check_collision(enemy)
 
             for enemy in self.enemies_type2:
                 if -64 <= enemy.x - self.camera_x <= pyxel.width + 64:
                     enemy.update()
-                    if self.player.check_collision(enemy):
-                        self.game_over = True
-            
+                    self.player.check_collision(enemy)
+
             for enemy in self.enemies_type3:
                 if -64 <= enemy.x - self.camera_x <= pyxel.width + 64:
                     enemy.update(self.player)
-                    if self.player.check_collision_dossun(enemy):
-                        self.game_over = True
+                    self.player.check_collision_dossun(enemy)
 
             for enemy in self.enemies_type4:
                 if -64 <= enemy.x - self.camera_x <= pyxel.width + 64:
                     enemy.update(self.player)
-                    if self.player.check_collision_dossun(enemy):
-                        self.game_over = True   
+                    self.player.check_collision_dossun(enemy)
 
             for item in self.jump_items:
                 if -64 <= item.x - self.camera_x <= pyxel.width + 64:
                     item.update(self.player)
                     self.player.check_collision_item(item)
-            
+
             for item in self.speed_items:
                 if -64 <= item.x - self.camera_x <= pyxel.width + 64:
                     item.update(self.player)
                     self.player.check_collision_item(item)
 
-            # 落下判定
-            if self.player.y > 127 :
-                self.game_over = True    
+            # ライフ0でゲームオーバー
+            if not self.player.is_alive:
+                self.game_over = True
+
+            # 落下判定(ライフ減少、残機あれば復活)
+            if self.player.y > 127:
+                if self.player.take_damage():
+                    if self.player.is_alive:
+                        # 直前のカメラ左端付近に復活
+                        self.player.x = max(0, self.camera_x)
+                        self.player.y = 0
+                        self.player.dy = 0
+                    else:
+                        self.game_over = True
 
             
         else:
@@ -178,9 +193,17 @@ class App:
         pyxel.bltm(0, 0, 0, self.camera_x, 0, 2048, 128)
 
         if not self.game_over and not self.game_clear:
-            # プレイヤーの描写
+            # プレイヤーの描写(無敵中は点滅)
             real_x = self.player.x - self.camera_x
-            pyxel.blt(real_x, self.player.y, 0, 8, 8, 8 if self.player.direction == 1 else -8, 8, 0)
+            if self.player.invincible_timer == 0 or self.player.invincible_timer % 6 < 3:
+                pyxel.blt(real_x, self.player.y, 0, 8, 8, 8 if self.player.direction == 1 else -8, 8, 0)
+
+            # HUD
+            pyxel.text(2, 2, f"SCORE:{self.score}", 7)
+            time_sec = self.timer // 30
+            pyxel.text(2, 10, f"TIME:{time_sec}", 7)
+            for i in range(self.player.lives):
+                pyxel.blt(130 + i * 10, 2, 0, 8, 8, 8, 8, 0)
 
             # 敵の描画
             for enemy in self.enemies_type1:
@@ -248,10 +271,14 @@ class App:
 
         elif self.game_clear:
             # クリア画面
-            pyxel.text(60, 64, "GAME CLEAR!", 11)
-            pyxel.text(45, 74, "PRESS R TO RESTART", 8)
+            pyxel.text(57, 54, "GAME CLEAR!", 11)
+            pyxel.text(50, 64, f"SCORE: {self.score}", 10)
+            time_sec = self.timer // 30
+            pyxel.text(50, 72, f"TIME:  {time_sec}s", 7)
+            pyxel.text(42, 82, "PRESS R TO RESTART", 8)
         else:
             # ゲームオーバー画面
-            pyxel.text(60, 64, "GAME OVER", 8)
-            pyxel.text(45, 74, "PRESS R TO RESTART", 8)
+            pyxel.text(60, 58, "GAME OVER", 8)
+            pyxel.text(50, 68, f"SCORE: {self.score}", 7)
+            pyxel.text(42, 78, "PRESS R TO RESTART", 8)
 App()

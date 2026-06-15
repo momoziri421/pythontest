@@ -16,9 +16,14 @@ class Player:
         self.gravity = 0.35
         self.max_fall_speed = 6
         self.accelerration = 1
+        self.max_speed = 3
+        self.friction = 0.7
         
-        #成功判定
+        # ライフ・無敵
         self.is_alive = True
+        self.lives = 3
+        self.invincible_timer = 0
+        self.invincible_duration = 90
 
     def check_tile_collisions(self, x, y):
         # タイルのサイズ（8x8）を考慮して、プレイヤーの四隅のタイル座標をチェック
@@ -47,14 +52,20 @@ class Player:
 
     
     def update(self):
-        
+        if self.invincible_timer > 0:
+            self.invincible_timer -= 1
+
         # 左右移動
         if pyxel.btn(pyxel.KEY_LEFT):
-            self.dx -= self.accelerration
+            self.dx = max(self.dx - self.accelerration, -self.max_speed)
             self.direction = -1
         elif pyxel.btn(pyxel.KEY_RIGHT):
-            self.dx += self.accelerration
+            self.dx = min(self.dx + self.accelerration, self.max_speed)
             self.direction = 1
+        else:
+            self.dx *= self.friction
+            if abs(self.dx) < 0.1:
+                self.dx = 0
 
 
         # ジャンプ
@@ -79,7 +90,6 @@ class Player:
         has_collision, _ = self.check_tile_collisions(next_x, self.y)
         if not has_collision:
             self.x = next_x
-            self.dx = 0
         else:
             # 壁と衝突(速度を0に戻す)
             self.dx = 0
@@ -117,25 +127,31 @@ class Player:
         # 移動制限
         self.x = max(0,min(self.x , 2048 - 8))
 
+    def take_damage(self):
+        if self.invincible_timer > 0:
+            return False
+        self.lives -= 1
+        self.invincible_timer = self.invincible_duration
+        if self.lives <= 0:
+            self.is_alive = False
+        return True
+
     def check_collision(self, enemy):
-        # 敵とのあたり判定
+        # 踏みつけ判定
         if (abs(self.x - enemy.x) < 8 and
              0 > self.y - enemy.y > -8):
             self.defeat_enemy(enemy)
             return False
-            
+        # ダメージ判定
         if (abs(self.x - enemy.x) < 8 and
-             abs(self.y -enemy.y) < 8):
-            self.is_alive = False
-            return True
+             abs(self.y - enemy.y) < 8):
+            return self.take_damage()
         return False
-    
+
     def check_collision_dossun(self, enemy):
-        # 敵とのあたり判定
         if (abs(self.x - enemy.x) < 7 and
-             abs(self.y -enemy.y) < 7):
-            self.is_alive = False
-            return True
+             abs(self.y - enemy.y) < 7):
+            return self.take_damage()
         return False
     
     def check_collision_item(self, item):
